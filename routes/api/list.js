@@ -129,9 +129,8 @@ router.put(
 //@route   DELETE api/list
 //@desc    Delete List of user
 //@access  Private
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
-
     //@todo -  remove users posts
     //Remove profile
     await List.findOneAndRemove({
@@ -140,6 +139,22 @@ router.delete("/:id", async (req, res) => {
     res.json({ msg: "List deleted" });
   } catch (error) {
     res.status(500).send("server error");
+  }
+});
+
+//@route   DELETE api/list/completed
+//@desc    Delete all completed List of user
+//@access  Private
+router.get("/deleteAllList", auth, async (req, res) => {
+  try {
+    await List.deleteMany({
+      userID: req.user.id,
+      status:true
+    });
+    res.json({ msg: "List deleted" });
+  } catch (error) {
+    res.status(500).send("server error");
+    console.log(error);
   }
 });
 
