@@ -5,42 +5,17 @@ const Profile = require("../../models/Profile");
 const User = require("../../models/User");
 const auth = require("../../middleware/auth");
 const List = require("../../models/List");
+const userAction = require("../../controller/listCtrl");
 
 //@route   GET api/list/pendinglist
 //@desc    Get Current user list
 //@access  Private
-router.get("/pending", auth, async (req, res) => {
-  try {
-    const list = await List.find({
-      userID: req.user.id,
-      status: "false"
-    });
-    if (!list) {
-      return res.status(400).json({ msg: "there is no list for this user" });
-    }
-    res.json(list);
-  } catch (error) {
-    res.status(500).send("Server Error");
-  }
-});
+router.get("/pending", auth, userAction.getUserPendingList);
 
 //@route   GET api/list/completedlist
 //@desc    Get Current user list
 //@access  Private
-router.get("/completed", auth, async (req, res) => {
-  try {
-    const list = await List.find({
-      userID: req.user.id,
-      status: "true"
-    });
-    if (!list) {
-      return res.status(400).json({ msg: "there is no list for this user" });
-    }
-    res.json(list);
-  } catch (error) {
-    res.status(500).send("Server Error");
-  }
-});
+router.get("/completed", auth, userAction.getUserCompletedList);
 
 //@route   POST api/list
 //@desc    Create user list
@@ -58,27 +33,7 @@ router.post(
         .isEmpty()
     ]
   ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ erros: errors.array() });
-    }
-    const { title, description } = req.body;
-    //Build list object
-    const listFields = {};
-    listFields.userID = req.user.id;
-    if (title) listFields.title = title;
-    if (description) listFields.description = description;
-
-    try {
-      //create
-      list = new List(listFields);
-      await list.save();
-      res.json(list);
-    } catch (error) {
-      res.status(500).send("server error");
-    }
-  }
+  userAction.createUserList
 );
 
 //@route   Put api/list
@@ -97,65 +52,17 @@ router.put(
         .isEmpty()
     ]
   ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ erros: errors.array() });
-    }
-    const { title, description, status } = req.body;
-    //Build list object
-    const listFields = {};
-
-    try {
-      if (title) listFields.title = title;
-      if (description) listFields.description = description;
-      if (status) listFields.status = status;
-      let list = await List.findOne({ _id: req.params.id });
-      if (list) {
-        //Update
-        list = await List.findOneAndUpdate(
-          { _id: req.params.id },
-          { $set: listFields },
-          { new: true }
-        );
-        return res.json(list);
-      }
-    } catch (error) {
-      res.status(500).send("server error");
-    }
-  }
+  userAction.updateUserList
 );
 
 //@route   DELETE api/list
 //@desc    Delete List of user
 //@access  Private
-router.delete("/:id", auth, async (req, res) => {
-  try {
-    //@todo -  remove users posts
-    //Remove profile
-    await List.findOneAndRemove({
-      _id: req.params.id
-    });
-    res.json({ msg: "List deleted" });
-  } catch (error) {
-    res.status(500).send("server error");
-  }
-});
+router.delete("/:id", auth, userAction.deleteUserList);
 
 //@route   DELETE api/list/completed
 //@desc    Delete all completed List of user
 //@access  Private
-router.get("/deleteAllList", auth, async (req, res) => {
-  try {
-    await List.deleteMany({
-      userID: req.user.id,
-      status:true
-    });
-    res.json({ msg: "List deleted" });
-  } catch (error) {
-    res.status(500).send("server error");
-    console.log(error);
-  }
-});
+router.get("/deleteAllList", auth, userAction.deleteCompletedUserList);
 
 module.exports = router;
